@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fear†Killer: Ultimate Tic Tac Toe</title>
+  <style>
+    body {
+      margin: 0;
+      background: #080013;
+      font-family: 'Orbitron', sans-serif;
+      color: #fff;
+      text-align: center;
+    }
+
+    h1 {
+      color: #ff3cac;
+      margin-top: 20px;
+      text-shadow: 0 0 10px #ff3cac;
+    }
+
+    #game {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      width: 540px;
+      height: 540px;
+      margin: 40px auto;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+      background: #111;
+      padding: 5px;
+      box-sizing: border-box;
+      border: 2px solid #555;
+    }
+
+    .cell {
+      width: 50px;
+      height: 50px;
+      background-color: #1a1a2e;
+      font-size: 24px;
+      font-weight: bold;
+      color: #fffa;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border-radius: 4px;
+      box-shadow: 0 0 4px #333;
+    }
+
+    .cell:hover {
+      background-color: #222249;
+    }
+
+    .active-board {
+      box-shadow: 0 0 10px 3px #3efcff;
+    }
+
+    .won-X {
+      background-color: rgba(255, 99, 132, 0.2);
+      box-shadow: 0 0 10px 3px #ff4a8d inset;
+    }
+
+    .won-O {
+      background-color: rgba(100, 255, 255, 0.2);
+      box-shadow: 0 0 10px 3px #3efcff inset;
+    }
+
+    #status {
+      font-size: 18px;
+      padding: 10px;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 600px) {
+      #game {
+        width: 90vw;
+        height: 90vw;
+      }
+
+      .cell {
+        width: 9vw;
+        height: 9vw;
+        font-size: 5vw;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Fear†Killer: Ultimate Tic Tac Toe</h1>
+  <div id="game"></div>
+  <div id="status">Your turn (X)</div>
+
+  <script>
+    const game = document.getElementById('game');
+    const status = document.getElementById('status');
+    let boards = [], boardStates = Array(9).fill(null);
+    let currentPlayer = 'X';
+    let activeBoard = -1;
+    let gameOver = false;
+
+    function createBoard(index) {
+      const board = document.createElement('div');
+      board.classList.add('board');
+      board.dataset.index = index;
+
+      for (let i = 0; i < 9; i++) {
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        cell.dataset.cell = i;
+        cell.addEventListener('click', () => handleMove(board, cell));
+        board.appendChild(cell);
+      }
+
+      game.appendChild(board);
+      boards.push(board);
+    }
+
+    for (let i = 0; i < 9; i++) createBoard(i);
+
+    function handleMove(board, cell) {
+      if (gameOver) return;
+      const boardIndex = parseInt(board.dataset.index);
+      const cellIndex = parseInt(cell.dataset.cell);
+
+      if ((activeBoard === -1 || activeBoard === boardIndex) && !cell.textContent && !boardStates[boardIndex]) {
+        cell.textContent = currentPlayer;
+        cell.style.color = currentPlayer === 'X' ? '#ff3cac' : '#3efcff';
+
+        if (checkBoardWin(board, currentPlayer)) {
+          board.classList.add(`won-${currentPlayer}`);
+          boardStates[boardIndex] = currentPlayer;
+        }
+
+        const overallWinner = checkGameWin();
+        if (overallWinner) {
+          endGame(overallWinner);
+          return;
+        }
+
+        activeBoard = cellIndex;
+        if (boardStates[activeBoard]) activeBoard = -1;
+        highlightActiveBoard();
+
+        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+        status.textContent = `${currentPlayer === 'X' ? 'Your' : "AI's"} turn (${currentPlayer})`;
+
+        if (currentPlayer === 'O') setTimeout(aiMove, 400);
+      }
+    }
+
+    function checkBoardWin(board, player) {
+      const cells = [...board.children].map(c => c.textContent);
+      const winPatterns = [
+        [0,1,2],[3,4,5],[6,7,8],
+        [0,3,6],[1,4,7],[2,5,8],
+        [0,4,8],[2,4,6]
+      ];
+      return winPatterns.some(pattern => pattern.every(i => cells[i] === player));
+    }
+
+    function checkGameWin() {
+      const b = boardStates;
+      const lines = [
+        [0,1,2],[3,4,5],[6,7,8],
+        [0,3,6],[1,4,7],[2,5,8],
+        [0,4,8],[2,4,6]
+      ];
+      for (let line of lines) {
+        const [a, b1, c] = line;
+        if (b[a] && b[a] === b[b1] && b[a] === b[c]) return b[a];
+      }
+      if (boardStates.every(Boolean)) return 'Draw';
+      return null;
+    }
+
+    function endGame(winner) {
+      gameOver = true;
+      if (winner === 'X') {
+        const msg = Math.random() < 0.5 ?
+          'MISSION COMPLETE: Forgotten Vault Unlocked – Password: <strong>golden phoenix</strong>' :
+          'MISSION COMPLETE: Protocol Closed Successfully.';
+        status.innerHTML = msg;
+      } else if (winner === 'O') {
+        status.innerHTML = 'MISSION FAILED. ACCESS DENIED.';
+      } else {
+        status.textContent = 'DRAW. SYSTEM RESET.';
+      }
+    }
+
+    function highlightActiveBoard() {
+      boards.forEach((b, i) => {
+        b.classList.remove('active-board');
+        if ((activeBoard === -1 && !boardStates[i]) || activeBoard === i) {
+          b.classList.add('active-board');
+        }
+      });
+    }
+
+    function aiMove() {
+      let candidates = [];
+      boards.forEach((board, bIndex) => {
+        if (activeBoard === -1 || activeBoard === bIndex) {
+          if (!boardStates[bIndex]) {
+            [...board.children].forEach((cell) => {
+              if (!cell.textContent) candidates.push({ board, cell });
+            });
+          }
+        }
+      });
+      if (candidates.length === 0) return;
+      const move = candidates[Math.floor(Math.random() * candidates.length)];
+      handleMove(move.board, move.cell);
+    }
+
+    highlightActiveBoard();
+  </script>
+</body>
+</html>
